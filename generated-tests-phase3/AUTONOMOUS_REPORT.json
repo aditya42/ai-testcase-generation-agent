@@ -1,0 +1,348 @@
+{
+  "analysis": {
+    "runId": "218a78ae-a6fd-4195-abac-0734666f5d79",
+    "summary": "Analyzed 7 artifacts; identified 3 impacted area(s) and 2 coverage gap(s). Agent pipeline analyzed 4 changed/source file(s), retrieved 7 evidence item(s), and ran 0 quality finding(s).",
+    "riskScore": 92,
+    "changedComponents": [
+      "payment",
+      "checkout",
+      "authentication"
+    ],
+    "coverageGaps": [
+      "Payment decline/error handling after changed payment path",
+      "Authorization boundary and expired-token behavior"
+    ],
+    "scenarios": [
+      {
+        "id": "SCN-PAY-001",
+        "title": "Reject a declined card without creating an order",
+        "layer": "api",
+        "priority": "P0",
+        "riskScore": 92,
+        "riskReasons": [
+          "Revenue-critical payment path",
+          "Payment-related change detected",
+          "Historical production defects supplied"
+        ],
+        "evidence": [
+          {
+            "sourceId": "REQ-142",
+            "sourceType": "requirement",
+            "excerpt": "declin"
+          },
+          {
+            "sourceId": "API-PAY",
+            "sourceType": "openapi",
+            "excerpt": "payment"
+          },
+          {
+            "sourceId": "DIFF-77",
+            "sourceType": "diff",
+            "excerpt": "Payment"
+          }
+        ],
+        "given": [
+          "a valid checkout session",
+          "a card configured to decline"
+        ],
+        "when": [
+          "POST /api/payments/authorize is called"
+        ],
+        "then": [
+          "HTTP 402 is returned",
+          "no order is created",
+          "decline reason is preserved"
+        ],
+        "generatedCode": "import { test, expect } from '@playwright/test';\ntest('declined payment does not create order', async ({ request }) => {\n  const r = await request.post('/api/payments/authorize', { data: { orderId:'demo-1', cardToken:'tok_decline' } });\n  expect(r.status()).toBe(402);\n  expect(await r.json()).toMatchObject({ status:'DECLINED' });\n});",
+        "confidence": 0.72,
+        "validation": []
+      },
+      {
+        "id": "SCN-PAY-002",
+        "title": "Display payment decline and keep checkout recoverable",
+        "layer": "ui",
+        "priority": "P0",
+        "riskScore": 88,
+        "riskReasons": [
+          "Customer-facing checkout",
+          "Same backend risk exposed through UI"
+        ],
+        "evidence": [
+          {
+            "sourceId": "REQ-142",
+            "sourceType": "requirement",
+            "excerpt": "Checkout"
+          },
+          {
+            "sourceId": "API-PAY",
+            "sourceType": "openapi",
+            "excerpt": "payment"
+          },
+          {
+            "sourceId": "DIFF-77",
+            "sourceType": "diff",
+            "excerpt": "Payment"
+          }
+        ],
+        "given": [
+          "customer is on checkout",
+          "declining payment method is selected"
+        ],
+        "when": [
+          "customer submits the order"
+        ],
+        "then": [
+          "decline message is visible",
+          "checkout remains usable",
+          "duplicate order is not created"
+        ],
+        "generatedCode": "import { test, expect } from '@playwright/test';\ntest('checkout remains recoverable after decline', async ({ page }) => {\n  await page.goto('/checkout');\n  await page.getByTestId('card-token').fill('tok_decline');\n  await page.getByRole('button', { name: 'Place order' }).click();\n  await expect(page.getByRole('alert')).toContainText('declined');\n  await expect(page.getByRole('button', { name: 'Place order' })).toBeEnabled();\n});",
+        "confidence": 0.72,
+        "validation": []
+      }
+    ],
+    "changeImpact": {
+      "files": [
+        "src/services/PaymentService.ts",
+        "PaymentService.ts",
+        "Git diff HEAD~1..HEAD",
+        "Dependency impact graph"
+      ],
+      "symbols": [
+        "authorizePayment"
+      ],
+      "endpoints": [
+        "/API/PAYMENTS/AUTHORIZE undefined"
+      ],
+      "components": [
+        "payment",
+        "checkout",
+        "authentication"
+      ],
+      "riskSignals": [
+        "security-sensitive-change",
+        "revenue-critical-change",
+        "failure-path-change"
+      ]
+    },
+    "retrieval": {
+      "query": "payment checkout authentication /API/PAYMENTS/AUTHORIZE undefined authorizePayment security-sensitive-change revenue-critical-change failure-path-change",
+      "evidence": [
+        {
+          "sourceId": "REQ-142",
+          "sourceType": "requirement",
+          "excerpt": "Checkout must reject declined card payments, show a recoverable error, and allow retry without creating an order.",
+          "relevance": 0.2222222222222222
+        },
+        {
+          "sourceId": "API-PAY",
+          "sourceType": "openapi",
+          "excerpt": "POST /api/payments/authorize returns 200 APPROVED or 402 DECLINED. Repeated authorization must not create duplicate orders.",
+          "relevance": 0.2222222222222222
+        },
+        {
+          "sourceId": "DIFF-77",
+          "sourceType": "diff",
+          "excerpt": "+ async function authorizePayment(orderId, cardToken) + POST /api/payments/authorize + retry authorization before createOrder - previous authorize implementation",
+          "relevance": 0.2222222222222222
+        },
+        {
+          "sourceId": "DEF-391",
+          "sourceType": "defect",
+          "excerpt": "S1 production defect: a declined payment followed by retry could create two orders.",
+          "relevance": 0.1111111111111111
+        },
+        {
+          "sourceId": "TEST-8",
+          "sourceType": "existing_test",
+          "excerpt": "test successful card checkout and verify confirmation page",
+          "relevance": 0.1111111111111111
+        },
+        {
+          "sourceId": "git-diff",
+          "sourceType": "diff",
+          "excerpt": "diff --git a/CHANGELOG.md b/CHANGELOG.md new file mode 100644 index 0000000..28f0da2 --- /dev/null +++ b/CHANGELOG.md @@ -0,0 +1 @@ +# Phase 3 validation",
+          "relevance": 0
+        },
+        {
+          "sourceId": "impact-graph",
+          "sourceType": "source_code",
+          "excerpt": "{ \"changed\": [ \"CHANGELOG.md\" ], \"impacted\": [ \"CHANGELOG.md\" ] }",
+          "relevance": 0
+        }
+      ]
+    },
+    "quality": {
+      "passed": true,
+      "findings": []
+    },
+    "provider": "deterministic"
+  },
+  "repository": {
+    "base": "HEAD~1",
+    "head": "HEAD",
+    "changedFiles": [
+      "CHANGELOG.md"
+    ],
+    "diff": "diff --git a/CHANGELOG.md b/CHANGELOG.md\nnew file mode 100644\nindex 0000000..28f0da2\n--- /dev/null\n+++ b/CHANGELOG.md\n@@ -0,0 +1 @@\n+# Phase 3 validation",
+    "dependencyGraph": {
+      "apps/api/src/agent/autonomousPipeline.ts": [
+        "@testgen/core",
+        "apps/api/src/agent/pipeline.js",
+        "apps/api/src/services/repositoryAnalyzer.js",
+        "apps/api/src/services/sandboxValidator.js",
+        "apps/api/src/services/agentJudge.js",
+        "apps/api/src/services/githubReporter.js"
+      ],
+      "apps/api/src/agent/pipeline.ts": [
+        "node:crypto",
+        "@testgen/core",
+        "apps/api/src/services/analyzer.js",
+        "apps/api/src/services/changeAnalyzer.js",
+        "apps/api/src/services/retriever.js",
+        "apps/api/src/services/qualityGates.js",
+        "apps/api/src/providers/llm.js"
+      ],
+      "apps/api/src/autonomousCli.ts": [
+        "node:fs",
+        "node:path",
+        "@testgen/core",
+        "apps/api/src/agent/autonomousPipeline.js"
+      ],
+      "apps/api/src/cli.ts": [
+        "node:fs",
+        "node:path",
+        "apps/api/src/agent/pipeline.js",
+        "apps/api/src/services/prReporter.js",
+        "@testgen/core"
+      ],
+      "apps/api/src/demo.ts": [
+        "apps/api/src/services/analyzer.js"
+      ],
+      "apps/api/src/providers/llm.ts": [
+        "openai",
+        "zod",
+        "@testgen/core",
+        "@playwright/test",
+        "@playwright/test"
+      ],
+      "apps/api/src/server.ts": [
+        "fastify",
+        "@fastify/cors",
+        "zod",
+        "apps/api/src/agent/pipeline.js"
+      ],
+      "apps/api/src/services/agentJudge.ts": [
+        "@testgen/core",
+        "apps/api/src/services/sandboxValidator.js"
+      ],
+      "apps/api/src/services/analyzer.ts": [
+        "@testgen/core",
+        "node:crypto",
+        "@playwright/test",
+        "@playwright/test",
+        "@playwright/test"
+      ],
+      "apps/api/src/services/changeAnalyzer.ts": [
+        "@testgen/core"
+      ],
+      "apps/api/src/services/githubReporter.ts": [
+        "@testgen/core",
+        "apps/api/src/services/sandboxValidator.js",
+        "apps/api/src/services/agentJudge.js"
+      ],
+      "apps/api/src/services/prReporter.ts": [
+        "@testgen/core"
+      ],
+      "apps/api/src/services/qualityGates.ts": [
+        "@testgen/core"
+      ],
+      "apps/api/src/services/repositoryAnalyzer.ts": [
+        "node:child_process",
+        "node:fs",
+        "node:path",
+        "@testgen/core"
+      ],
+      "apps/api/src/services/retriever.ts": [
+        "@testgen/core"
+      ],
+      "apps/api/src/services/sandboxValidator.ts": [
+        "node:fs",
+        "node:os",
+        "node:path",
+        "node:child_process",
+        "@testgen/core"
+      ],
+      "apps/web/src/main.tsx": [
+        "react"
+      ],
+      "apps/web/src/vite-env.d.ts": [],
+      "packages/core/src/index.ts": [],
+      "sample-app/tests/checkout-happy.spec.ts": [
+        "@playwright/test"
+      ]
+    },
+    "impactedFiles": [
+      "CHANGELOG.md"
+    ]
+  },
+  "executions": [
+    {
+      "scenarioId": "SCN-PAY-001",
+      "passed": true,
+      "attempts": 1,
+      "command": "node --check",
+      "output": "syntax accepted",
+      "repaired": false
+    },
+    {
+      "scenarioId": "SCN-PAY-002",
+      "passed": true,
+      "attempts": 1,
+      "command": "node --check",
+      "output": "syntax accepted",
+      "repaired": false
+    }
+  ],
+  "judges": {
+    "SCN-PAY-001": {
+      "score": 100,
+      "verdict": "approve",
+      "reasons": [
+        "traceable evidence",
+        "explicit assertions",
+        "multi-signal risk rationale",
+        "sandbox syntax validation passed",
+        "not classified as duplicate"
+      ],
+      "coverageSignal": 100,
+      "mutationSignal": 80
+    },
+    "SCN-PAY-002": {
+      "score": 100,
+      "verdict": "approve",
+      "reasons": [
+        "traceable evidence",
+        "explicit assertions",
+        "multi-signal risk rationale",
+        "sandbox syntax validation passed",
+        "not classified as duplicate"
+      ],
+      "coverageSignal": 100,
+      "mutationSignal": 80
+    }
+  },
+  "github": {
+    "summary": "# AI Quality Engineering Check\n\n**Run:** 218a78ae-a6fd-4195-abac-0734666f5d79  \n**Risk:** 92/100  \n**Provider:** deterministic  \n**Scenarios:** 2  \n**Judge-approved:** 2/2\n\n## Proposed tests\n- **SCN-PAY-001 Reject a declined card without creating an order** — approve (100/100), sandbox pass\n- **SCN-PAY-002 Display payment decline and keep checkout recoverable** — approve (100/100), sandbox pass\n\n> Generated tests are proposals. Human approval is required before merge.\n",
+    "check": {
+      "name": "AI Test Generation",
+      "head_sha": "",
+      "status": "completed",
+      "conclusion": "success",
+      "output": {
+        "title": "AI test proposals: 2",
+        "summary": "Risk 92/100. 2 proposals passed the autonomous judge. Human review remains required."
+      }
+    }
+  }
+}

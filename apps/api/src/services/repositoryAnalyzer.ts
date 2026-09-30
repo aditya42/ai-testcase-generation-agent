@@ -9,3 +9,43 @@ export function analyzeRepository(repo:string,base='HEAD~1',head='HEAD'):RepoInt
  return {base,head,changedFiles,diff,dependencyGraph:graph,impactedFiles:[...impacted]};
 }
 export function repoArtifacts(r:RepoIntelligence):SourceArtifact[]{return [{id:'git-diff',type:'diff',name:`Git diff ${r.base}..${r.head}`,content:r.diff},{id:'impact-graph',type:'source_code',name:'Dependency impact graph',content:JSON.stringify({changed:r.changedFiles,impacted:r.impactedFiles},null,2)}]}
+function git(
+  repo: string,
+  args: string[]
+): string {
+  return execFileSync("git", args, {
+    cwd: repo,
+    encoding: "utf8",
+  }).trim();
+}
+
+function resolveGitRef(
+  repo: string,
+  ref: string
+): string {
+  const normalized = ref.replace(/\\~/g, "~");
+
+  try {
+    return git(repo, [
+      "rev-parse",
+      "--verify",
+      `${normalized}^{commit}`,
+    ]);
+  } catch {
+    throw new Error(
+      `Invalid Git reference: ${ref}. ` +
+      "Verify the repository contains the requested commit."
+    );
+  }
+}
+const baseCommit = resolveGitRef(repo, base);
+const headCommit = resolveGitRef(repo, head);
+
+const changedFiles = git(repo, [
+  "diff",
+  "--name-only",
+  baseCommit,
+  headCommit,
+])
+  .split("\n")
+  .filter(Boolean);

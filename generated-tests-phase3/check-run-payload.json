@@ -1,0 +1,10 @@
+{
+  "name": "AI Test Generation",
+  "head_sha": "",
+  "status": "completed",
+  "conclusion": "success",
+  "output": {
+    "title": "AI test proposals: 2",
+    "summary": "Risk 92/100. 2 proposals passed the autonomous judge. Human review remains required."
+  }
+}
