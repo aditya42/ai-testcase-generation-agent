@@ -1,0 +1,29 @@
+name: Autonomous AI Test Agent
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+jobs:
+  propose-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Analyze PR and generate validated proposals
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: npm run agent:autonomous -w apps/api -- --input ../../sample-app/artifacts.json --repo ../.. --base origin/${{ github.base_ref || 'main' }} --head HEAD --out ../../generated-tests-phase3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-test-proposals
+          path: generated-tests-phase3/
+      - name: Add job summary
+        run: cat generated-tests-phase3/GITHUB_CHECK.md >> "$GITHUB_STEP_SUMMARY"

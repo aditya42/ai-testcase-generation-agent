@@ -1,0 +1,8 @@
+openapi: 3.0.3
+info: { title: Demo Payment API, version: 1.0.0 }
+paths:
+  /api/payments/authorize:
+    post:
+      responses:
+        '200': { description: Authorized }
+        '402': { description: Payment declined }

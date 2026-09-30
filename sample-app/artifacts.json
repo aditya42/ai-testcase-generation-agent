@@ -1,0 +1,7 @@
+[
+ {"id":"REQ-142","type":"requirement","name":"Checkout payment decline","content":"Checkout must reject declined card payments, show a recoverable error, and allow retry without creating an order."},
+ {"id":"API-PAY","type":"openapi","name":"payment.yaml","content":"POST /api/payments/authorize returns 200 APPROVED or 402 DECLINED. Repeated authorization must not create duplicate orders."},
+ {"id":"DIFF-77","type":"diff","name":"PaymentService.ts","path":"src/services/PaymentService.ts","content":"+ async function authorizePayment(orderId, cardToken)\n+ POST /api/payments/authorize\n+ retry authorization before createOrder\n- previous authorize implementation"},
+ {"id":"DEF-391","type":"defect","name":"Duplicate order after decline","content":"S1 production defect: a declined payment followed by retry could create two orders."},
+ {"id":"TEST-8","type":"existing_test","name":"checkout-happy.spec.ts","content":"test successful card checkout and verify confirmation page"}
+]
